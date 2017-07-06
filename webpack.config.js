@@ -7,6 +7,7 @@ var ExtractTextPlugin = require('extract-text-webpack-plugin');
 var CopyWebpackPlugin = require('copy-webpack-plugin');
 
 
+
 const prod = 'production';
 const dev = 'development';
 
@@ -33,7 +34,7 @@ var commonConfig = {
         modules: ['node_modules']
     },
     module: {
-        noParse: /\.elm$/,
+        // noParse: /\.elm$/,
         rules: [{
             test: /\.(eot|ttf|woff|woff2|svg)$/,
             use: 'file-loader?publicPath=../../&name=static/css/[hash].[ext]'
@@ -53,39 +54,6 @@ var commonConfig = {
     ]
 }
 
-// additional webpack settings for local env (when invoked by 'npm start')
-if (isDev === true) {
-    module.exports = merge(commonConfig, {
-        entry: [
-            'webpack-dev-server/client?http://localhost:8080',
-            entryPath
-        ],
-        devServer: {
-            // serve index.html in place of 404 responses
-            historyApiFallback: true,
-            contentBase: './src',
-            hot: true
-        },
-        module: {
-            rules: [{
-                test: /\.elm$/,
-                exclude: [/elm-stuff/, /node_modules/],
-                use: [{
-                    loader: 'elm-webpack-loader',
-                    options: {
-                        verbose: true,
-                        warn: true,
-                        debug: true
-                    }
-                }]
-            },{
-                test: /\.sc?ss$/,
-                use: ['style-loader', 'css-loader', 'postcss-loader', 'sass-loader']
-            }]
-        }
-    });
-}
-
 // additional webpack settings for prod env (when invoked via 'npm run build')
 if (isProd === true) {
     module.exports = merge(commonConfig, {
@@ -94,12 +62,28 @@ if (isProd === true) {
             rules: [{
                 test: /\.elm$/,
                 exclude: [/elm-stuff/, /node_modules/],
-                use: 'elm-webpack-loader'
+                use: [
+                 {
+                   loader: 'elm-css-modules-loader',
+                 },
+                 {
+                   loader: 'elm-webpack-loader',
+                 }
+               ],
             }, {
-                test: /\.sc?ss$/,
+                test: /\.s?css$/,
                 use: ExtractTextPlugin.extract({
                     fallback: 'style-loader',
-                    use: ['css-loader', 'postcss-loader', 'sass-loader']
+                    use: [
+                      { loader: 'css-loader',
+                        options: {
+                           modules: true,
+                           localIdentName: '[name]__[local]--[hash:base64:5]',
+                        }
+                      },
+                      'postcss-loader',
+                      'sass-loader'
+                    ]
                 })
             }]
         },
@@ -117,13 +101,13 @@ if (isProd === true) {
 
             // extract CSS into a separate file
             // minify & mangle JS/CSS
-            new webpack.optimize.UglifyJsPlugin({
-                minimize: true,
-                compressor: {
-                    warnings: false
-                }
-                // mangle:  true
-            })
+            // new webpack.optimize.UglifyJsPlugin({
+            //     minimize: true,
+            //     compressor: {
+            //         warnings: false
+            //     }
+            //     // mangle:  true
+            // })
         ]
     });
 }
